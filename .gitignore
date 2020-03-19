@@ -1,0 +1,8 @@
+/.cpcache/
+/.idea/
+/.shadow-cljs/
+/node_modules/
+/target/
+
+/.screeps.json
+/.DS_Store

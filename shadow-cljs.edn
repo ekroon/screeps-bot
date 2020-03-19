@@ -1,0 +1,5 @@
+{:deps true
+ :builds {:main {:output-dir "target/"
+                 :output-to "target/main.js"
+                 :exports {:loop oxsevenbee.screepsbot/bot-loop}
+                 :target :node-library}}}
