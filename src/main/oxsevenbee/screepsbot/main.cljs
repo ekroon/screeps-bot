@@ -28,7 +28,7 @@
 (def game (create-game))
 ;(def game js/Game)
 
-(def memory (->clj js/Memory))
+(def memory (atom nil))
 
 (defn spawn-creep [spawn creep-name body]
   (ocall (get-in game [:spawns spawn]) :spawnCreep body (name creep-name)))
@@ -37,10 +37,21 @@
 ;; else if not empty deliver
 
 (defn set-memory [path-to m]
-  (oset! memory path-to (->js m)))
+  (reset! memory (assoc-in @memory path-to m)))
 
 (defn get-memory [path-to]
-  (->clj (oget memory path-to)))
+  (get-in @memory path-to))
+
+;
+;(defn getMemory [string-path-to]
+;  (let [clj-path-to (->clj string-path-to)]
+;    (println clj-path-to)
+;    (get-memory clj-path-to)))
+
+;(oset! js/global "getMemory" getMemory)
+
+;; harvest steps
+;; check capacity / switch role and execute, if only switching, this will miss a tick
 
 ; keep controller active for now
 (defn harvest [creep-name]
@@ -49,12 +60,15 @@
       (do
         (let [{x :x y :y} (:pos creep)]
           (if (not= [x y] [33 28])
-            (ocall creep :moveTo 33 28)
+            (do
+              (ocall creep :moveTo 33 28))
             (do
               (ocall creep :say "harvesting")
               (ocall creep :harvest (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fa"))
               (when (<= (ocall (:store creep) :getFreeCapacity) 0)
-                (set-memory [:creeps creep-name :working] true)))
+                (set-memory [:creeps creep-name :working] true)
+                ;; continue in new role right away
+                (harvest creep-name)))
             #_(if (<= (ocall (:store creep) :getFreeCapacity) 0)
               (do
                 (ocall creep :say "next: upgrade")
@@ -63,10 +77,11 @@
                 (ocall creep :say "harvesting")
                 (ocall creep :harvest (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fa")))))))
       (do
-        (ocall creep :say "upgrading")
-        (ocall creep :upgradeController (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fb"))
+        (let [controller (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fb")]
+          (ocall creep :upgradeController controller))
         (when (<= (ocall (:store creep) :getUsedCapacity) 0)
-          (set-memory [:creeps creep-name :working] false)))
+          (set-memory [:creeps creep-name :working] false)
+          (harvest creep-name)))
       #_(if (<= (ocall (:store creep) :getUsedCapacity) 0)
         (do
           (ocall creep :say "next: harvest")
@@ -75,11 +90,31 @@
           (ocall creep :say "upgrading")
           (ocall creep :upgradeController (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fb")))))))
 
-;(set-memory [:creeps creep-name] {:role :harvester :harvesting true})
+
+(defn load-memory []
+  (if (nil? @memory)
+    (reset! memory (->clj (js/JSON.parse (or (.get js/RawMemory) "{}"))))
+    #_(println "not-loaded" @memory)))
+
+(defn write-memory []
+  (.set js/RawMemory (js/JSON.stringify (->js @memory))))
 
 (defn ^:export game-loop []
-  (js/console.log (spawn-creep :Spawn1 :Harvester1 #js [js/WORK js/WORK js/CARRY js/MOVE]))
+  ;; memory hotfix for use with ->clj
+  ;(oset! js/Memory "__proto__" #js {})
+
+  (when (nil? @memory)
+    (reset! memory (js->clj js/Memory :keywordize-keys true)))
+  ;(load-memory)
+
+  (spawn-creep :Spawn1 :Harvester1 #js [js/WORK js/WORK js/CARRY js/MOVE])
   (harvest :Harvester1)
-  (println (ocall js/Game [:cpu :getUsed])))
+
+  ;(write-memory)
+
+  (js/Object.assign js/Memory (clj->js @memory))
+  (println (get-in @memory [:creeps :Harvester1 :working]))
+  (println (oget js/Memory :creeps :Harvester1 :working))
+  )
 
 #_(set! js/module.exports.loop my-loop)

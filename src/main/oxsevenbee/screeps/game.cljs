@@ -32,3 +32,10 @@
        :pos (bean (oget this :pos))
        :store (oget this :store)
        nil))))
+
+;; not allowed
+#_(let [property-descriptor (js/Object.getOwnPropertyDescriptor (.-prototype js/Creep) "memory")]
+  (js/Object.defineProperty (.-prototype js/Creep) "memory" #js {
+                                                                 :get (fn [] (println "from get") (oget property-descriptor "get"))
+                                                                 :set (fn [] (println "from set") (oget property-descriptor "set"))
+                                                                 }))
