@@ -1,7 +1,6 @@
 (ns oxsevenbee.screepsbot
-  (:require [oops.core :refer [oget oset! ocall oapply ocall! oapply!
-                               oget+ oset!+ ocall+ oapply+ ocall!+ oapply!+]]
-            [oxsevenbee.screepsbot.main :as osm]))
+  (:require [cljs.source-map]
+    [oxsevenbee.screepsbot.main :as osm]))
 
 ;; clj -m cljs.main --optimizations simple -c oxsevenbee.screepsbot
 
