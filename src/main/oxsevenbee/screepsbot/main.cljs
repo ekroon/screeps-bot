@@ -54,7 +54,8 @@
               (ocall creep :say "harvesting")
               (ocall creep :harvest (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fa"))
               (when (<= (ocall (:store creep) :getFreeCapacity) 0)
-                (set-memory [:creeps creep-name :working] true)))
+                (set-memory [:creeps creep-name :working] true)
+                (harvest creep-name)))
             #_(if (<= (ocall (:store creep) :getFreeCapacity) 0)
               (do
                 (ocall creep :say "next: upgrade")
@@ -66,7 +67,8 @@
         (ocall creep :say "upgrading")
         (ocall creep :upgradeController (ocall js/Game :getObjectById "5bbcaf4b9099fc012e63a6fb"))
         (when (<= (ocall (:store creep) :getUsedCapacity) 0)
-          (set-memory [:creeps creep-name :working] false)))
+          (set-memory [:creeps creep-name :working] false)
+          (harvest creep-name)))
       #_(if (<= (ocall (:store creep) :getUsedCapacity) 0)
         (do
           (ocall creep :say "next: harvest")
@@ -78,8 +80,7 @@
 ;(set-memory [:creeps creep-name] {:role :harvester :harvesting true})
 
 (defn ^:export game-loop []
-  (js/console.log (spawn-creep :Spawn1 :Harvester1 #js [js/WORK js/WORK js/CARRY js/MOVE]))
-  (harvest :Harvester1)
-  (println (ocall js/Game [:cpu :getUsed])))
+  (spawn-creep :Spawn1 :Harvester1 #js [js/WORK js/WORK js/CARRY js/MOVE])
+  (harvest :Harvester1))
 
 #_(set! js/module.exports.loop my-loop)
