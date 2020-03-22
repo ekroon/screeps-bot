@@ -1,9 +1,11 @@
 (ns oxsevenbee.screepsbot.main
   (:require [cljs-bean.core :refer [bean? bean object ->clj ->js]]
+            [cljs-bean.transit]
             [goog.object :as go]
             [oxsevenbee.screeps.game :refer []]
             [cljs.spec.alpha :as s]
-            [cljs.spec.test.alpha :as stest]))
+            [cljs.spec.test.alpha :as stest]
+            [cognitect.transit :as t]))
 
 (set! *warn-on-infer* true)
 
@@ -83,15 +85,18 @@
 (defn load-memory []
   (when (nil? @memory)
     (let [start (.. js/Game -cpu getUsed)]
-      (reset! memory (.parse js/JSON (.get js/RawMemory)))
+      (let [r (t/reader :json)]
+        (reset! memory (t/read r (.get js/RawMemory))))
       #_(println "Parsed memory in:" (- (.. js/Game -cpu getUsed) start)  "CPU time")))
   (js-delete js/global "Memory") ;; deleting is important! removes property
-  (set! js/global.Memory @memory))
+  (set! js/global.Memory (-> @memory (get-in [:raw-memory] {}))))
 
 (defn write-memory []
   (let [start (.. js/Game -cpu getUsed)]
-    (reset! memory js/Memory)
-    (.set js/RawMemory (.stringify js/JSON js/global.Memory))
+    (let [w (t/writer :json
+                      {:handlers (cljs-bean.transit/writer-handlers)})]
+      (swap! memory (fn [m] (assoc m :raw-memory js/Memory)))
+      (.set js/RawMemory (t/write w @memory)))
     #_(println "Written memory in:" (- (.. js/Game -cpu getUsed) start) "CPU time")))
 
 (defn ^:export game-loop []

@@ -20,3 +20,9 @@
   (let [o #js {:creeps {:harvester1 {:working false}}}
         b (->clj o)]
     (bean? (->js (assoc-in b [:creeps :harvester1 :working] true)))))
+
+(defn merge-test []
+  (let [c {:creeps {:harvesterid1 {:working true}}}
+        o #js {"creeps" #js {"harvesterid1" #js {"_move" {}}}}]
+    (.stringify js/JSON (->js (merge-with conj c (->clj o))))
+    ))
