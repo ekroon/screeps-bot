@@ -23,6 +23,8 @@
 (defn ^js/StructSpawn get-spawn [spawn-name]
   (go/get (.. js/Game -spawns) spawn-name))
 
+(def memory (atom nil))
+
 (defn spawn-creep [spawn creep-name body]
   (.spawnCreep (get-spawn spawn) (clj->js body) (name creep-name)))
 
@@ -75,8 +77,25 @@
            (set-creep-memory creep-name "working" false)
            (when first-harvest (harvest creep-name false))))))))
 
+(defn load-memory []
+  (when (nil? @memory)
+    (let [start (.. js/Game -cpu getUsed)]
+      (reset! memory (.parse js/JSON (.get js/RawMemory)))
+      #_(println "Parsed memory in:" (- (.. js/Game -cpu getUsed) start)  "CPU time")))
+  (set! js/global.Memory @memory))
+
+(defn write-memory []
+  (let [start (.. js/Game -cpu getUsed)]
+    (reset! memory js/Memory)
+    (.set js/RawMemory (.stringify js/JSON js/Memory))
+    #_(println "Written memory in:" (- (.. js/Game -cpu getUsed) start) "CPU time")))
+
 (defn ^:export game-loop []
+  (load-memory)
+
   (spawn-creep "Spawn1" "Harvester1" #js [js/WORK js/WORK js/CARRY js/MOVE])
-  (harvest "Harvester1"))
+  (harvest "Harvester1")
+
+  (write-memory))
 
 #_(set! js/module.exports.loop my-loop)
