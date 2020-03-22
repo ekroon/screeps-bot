@@ -1,6 +1,9 @@
 (ns oxsevenbee.screepsbot.main
-  (:require [goog.object :as go]
-            [oxsevenbee.screeps.game :refer []]))
+  (:require [cljs-bean.core :refer [bean? bean object ->clj ->js]]
+            [goog.object :as go]
+            [oxsevenbee.screeps.game :refer []]
+            [cljs.spec.alpha :as s]
+            [cljs.spec.test.alpha :as stest]))
 
 (set! *warn-on-infer* true)
 
@@ -35,23 +38,21 @@
 (defn initialize-memory-creep [creep-name]
   (go/setIfUndefined (.-creeps js/Memory) creep-name #js {}))
 
+(s/fdef get-creep-memory
+        :args (s/cat :creep-name string? :k string?))
 (defn get-creep-memory [creep-name k default]
-  (initialize-memory-creeps)
-  (initialize-memory-creep creep-name)
-  (if (go/containsKey (go/get (.-creeps js/Memory) creep-name) k)
-    (go/getValueByKeys (.-creeps js/Memory) creep-name k)
-    (do
-      (println "returning default value for [creep-name k]" [creep-name k])
-      default)))
+  ;; ->clj default is keywords
+  (-> js/Memory ->clj (get-in [:creeps (keyword creep-name) (keyword k)] default)))
 
 (defn set-creep-memory [creep-name k v]
-  (initialize-memory-creeps)
-  (initialize-memory-creep creep-name)
-  (let [creep-memory (go/get (.-creeps js/Memory) creep-name)]
-    (go/set creep-memory k v)))
+  (set! js/Memory (-> js/Memory ->clj (assoc-in [:creeps (keyword creep-name) (keyword k)] v) ->js)))
 
 (defn ^js/Creep get-creep [creep-name]
-  (go/get (.. js/Game -creeps) creep-name))
+  (get-in (->clj js/Game) [:creeps (keyword creep-name)]))
+
+(defn creep-used-capacity [^js/Creep creep]
+  (let [store (.-store creep)]
+    (str (.getUsedCapacity store) "/" (.getCapacity store))))
 
 ; keep controller active for now
 (defn harvest
@@ -65,29 +66,32 @@
              (do
                (.moveTo creep 33 28))
              (do
-               (.say creep "harvesting")
-               (.harvest creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fa"))
-               (when (<= (.getFreeCapacity (.-store creep)) 0)
-                 (set-creep-memory creep-name "working" true)
-                 (when first-harvest (harvest creep-name false)))))))
+               (.say creep (str "> " (creep-used-capacity creep)))
+               (if (> (.getFreeCapacity (.-store creep)) 0)
+                 (.harvest creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fa"))
+                 (do
+                   (set-creep-memory creep-name "working" true)
+                   (when first-harvest (harvest creep-name false))))))))
        (do
-         (.say creep "upgrading")
-         (.upgradeController creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fb"))
-         (when (<= (.getUsedCapacity (.-store creep)) 0)
-           (set-creep-memory creep-name "working" false)
-           (when first-harvest (harvest creep-name false))))))))
+         (.say creep (str "< " (creep-used-capacity creep)))
+         (if (> (.getUsedCapacity (.-store creep)) 0)
+           (.upgradeController creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fb"))
+           (do
+             (set-creep-memory creep-name "working" false)
+             (when first-harvest (harvest creep-name false)))))))))
 
 (defn load-memory []
   (when (nil? @memory)
     (let [start (.. js/Game -cpu getUsed)]
       (reset! memory (.parse js/JSON (.get js/RawMemory)))
       #_(println "Parsed memory in:" (- (.. js/Game -cpu getUsed) start)  "CPU time")))
+  (js-delete js/global "Memory") ;; deleting is important! removes property
   (set! js/global.Memory @memory))
 
 (defn write-memory []
   (let [start (.. js/Game -cpu getUsed)]
     (reset! memory js/Memory)
-    (.set js/RawMemory (.stringify js/JSON js/Memory))
+    (.set js/RawMemory (.stringify js/JSON js/global.Memory))
     #_(println "Written memory in:" (- (.. js/Game -cpu getUsed) start) "CPU time")))
 
 (defn ^:export game-loop []
