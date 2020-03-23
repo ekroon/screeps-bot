@@ -3,4 +3,7 @@
                  :output-to "target/main.js"
                  :exports {:loop oxsevenbee.screepsbot/bot-loop}
                  :target :node-library
-                 :js-options {:js-provider :require}}}}
+                 :js-options {:js-provider :require}
+                 }}
+ :nrepl {:port 62160
+         :middleware []} }

@@ -40,14 +40,11 @@
 (defn initialize-memory-creep [creep-name]
   (go/setIfUndefined (.-creeps js/Memory) creep-name #js {}))
 
-(s/fdef get-creep-memory
-        :args (s/cat :creep-name string? :k string?))
 (defn get-creep-memory [creep-name k default]
-  ;; ->clj default is keywords
-  (-> js/Memory ->clj (get-in [:creeps (keyword creep-name) (keyword k)] default)))
+  (-> @memory (get-in [:creeps creep-name k] default)))
 
 (defn set-creep-memory [creep-name k v]
-  (set! js/Memory (-> js/Memory ->clj (assoc-in [:creeps (keyword creep-name) (keyword k)] v) ->js)))
+  (swap! memory (fn [m] (assoc-in m [:creeps creep-name k] v))))
 
 (defn ^js/Creep get-creep [creep-name]
   (get-in (->clj js/Game) [:creeps (keyword creep-name)]))
@@ -89,14 +86,15 @@
         (reset! memory (t/read r (.get js/RawMemory))))
       #_(println "Parsed memory in:" (- (.. js/Game -cpu getUsed) start)  "CPU time")))
   (js-delete js/global "Memory") ;; deleting is important! removes property
-  (set! js/global.Memory (-> @memory (get-in [:raw-memory] {}))))
+  (set! js/global.Memory (-> @memory (get-in [:game-memory] {}) ->js)))
 
 (defn write-memory []
   (let [start (.. js/Game -cpu getUsed)]
-    (let [w (t/writer :json
+    (let [w (t/writer :json-verbose
                       {:handlers (cljs-bean.transit/writer-handlers)})]
-      (swap! memory (fn [m] (assoc m :raw-memory js/Memory)))
-      (.set js/RawMemory (t/write w @memory)))
+      (swap! memory (fn [m] (assoc m :game-memory js/global.Memory)))
+      (.set js/RawMemory (t/write w @memory))
+      #_(.set js/RawMemory (t/write w {})))
     #_(println "Written memory in:" (- (.. js/Game -cpu getUsed) start) "CPU time")))
 
 (defn ^:export game-loop []
