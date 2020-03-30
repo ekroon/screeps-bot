@@ -2,10 +2,12 @@
   (:require [cljs-bean.core :refer [bean? bean object ->clj ->js]]
             [cljs-bean.transit]
             [goog.object :as go]
-            [oxsevenbee.screeps.game :refer []]
+            [oxsevenbee.screeps.game :refer [get-spawn]]
+            [oxsevenbee.screeps.spawn :refer [spawn-creep]]
             [cljs.spec.alpha :as s]
             [cljs.spec.test.alpha :as stest]
-            [cognitect.transit :as t]))
+            [cognitect.transit :as t]
+            [integrant.core :as ig]))
 
 (set! *warn-on-infer* true)
 
@@ -25,18 +27,16 @@
 ;; Main Entity -> Empire?
 ;; Empire looks expansion options
 
-(defn ^js/StructSpawn get-spawn [spawn-name]
-  (go/get (.. js/Game -spawns) spawn-name))
+;(defn ^js/StructSpawn get-spawn [spawn-name]
+;  (go/get (.. js/Game -spawns) spawn-name))
 
-(def memory (atom nil))
+;(defn spawn-creep [{:keys [game]} spawn creep-name body]
+;  (.spawnCreep js/StructureSpawn (go/get (.-spawns js/Game) spawn) (clj->js body) (name creep-name)))
 
-(defn spawn-creep [spawn creep-name body]
-  (.spawnCreep (get-spawn spawn) (clj->js body) (name creep-name)))
-
-(defn get-creep-memory [creep-name k default]
+(defn get-creep-memory [{:keys [memory] :as context} creep-name k default]
   (-> @memory (get-in [:creeps creep-name k] default)))
 
-(defn set-creep-memory [creep-name k v]
+(defn set-creep-memory [{:keys [memory]} creep-name k v]
   (swap! memory (fn [m] (assoc-in m [:creeps creep-name k] v))))
 
 (defn ^js/Creep get-creep [creep-name]
@@ -48,10 +48,11 @@
 
 ; keep controller active for now
 (defn manual-shard3-e39s51-controller-upgrade
-  ([creep-name] (manual-shard3-e39s51-controller-upgrade creep-name true))
-  ([creep-name first-harvest]
+  ([{:keys [memory] :as context} creep-name]
+   (manual-shard3-e39s51-controller-upgrade context creep-name true))
+  ([{:keys [memory] :as context} creep-name first-harvest]
    (when-let [creep (get-creep creep-name)]
-     (if-not (get-creep-memory creep-name "working" false)
+     (if-not (get-creep-memory context creep-name "working" false)
        (do
          (let [pos (.-pos creep)]
            (if (not= [(.-x pos) (.-y pos)] [33 28])
@@ -64,47 +65,33 @@
                (if (> (.getFreeCapacity (.-store creep)) 0)
                  (.harvest creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fa"))
                  (do
-                   (set-creep-memory creep-name "working" true)
-                   (when first-harvest (recur creep-name false))))))))
+                   (set-creep-memory context creep-name "working" true)
+                   (when first-harvest (recur context creep-name false))))))))
        (do
          (.say creep (str "< " (creep-used-capacity creep)))
          (if (> (.getUsedCapacity (.-store creep)) 0)
            (.upgradeController creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fb"))
            (do
-             (set-creep-memory creep-name "working" false)
-             (when first-harvest (recur creep-name false)))))))))
+             (set-creep-memory context creep-name "working" false)
+             (when first-harvest (recur context creep-name false)))))))))
 
-(defn delete-memory-creep [creep-name]
-  (swap! memory dissoc :creeps creep-name))
-
-(defn delete-game-memory-creep [creep-name]
-  (js-delete (.. ^js/Memory (get @memory :game-memory) -creeps) creep-name))
-
-(defn load-memory []
-  (when (nil? @memory)
-    (let [start (.. js/Game -cpu getUsed)]
-      (let [r (t/reader :json)]
-        (reset! memory
-                (update (t/read r (.get js/RawMemory)) :game-memory ->js)))
-      #_(println "Parsed memory in:" (- (.. js/Game -cpu getUsed) start)  "CPU time")))
-  (js-delete js/global "Memory") ;; deleting is important! removes property
-  (set! js/global.Memory (-> @memory (get-in [:game-memory]))))
-
-(defn write-memory []
-  (let [start (.. js/Game -cpu getUsed)]
-    (let [w (t/writer :json-verbose
-                      {:handlers (cljs-bean.transit/writer-handlers)})]
-      (swap! memory (fn [m] (assoc m :game-memory js/global.Memory)))
-      (.set js/RawMemory (t/write w @memory))
-      #_(.set js/RawMemory (t/write w {})))
-    #_(println "Written memory in:" (- (.. js/Game -cpu getUsed) start) "CPU time")))
-
-(defn ^:export game-loop []
+(defn game-loop [{:keys [memory load-memory write-memory]} game]
   (load-memory)
 
-  (spawn-creep "Spawn1" "Harvester1" #js [js/WORK js/WORK js/CARRY js/MOVE])
-  (manual-shard3-e39s51-controller-upgrade "Harvester1")
+  (let [context {:memory memory
+                 :game   game}]
+    (-> (get-spawn (:game context) "Spawn1") (spawn-creep "Harvester1" [js/WORK js/WORK js/CARRY js/MOVE]))
+    ;(spawn-creep (:game context) "Spawn1" "Harvester" [js/WORK js/WORK js/CARRY js/MOVE])
+    (manual-shard3-e39s51-controller-upgrade context "Harvester1"))
 
   (write-memory))
+
+;; {:memory {:memory #object[cljs.core.Atom {:val {:game-memory #js {:creeps #js {:Harvester1 #js {:_move #js {:dest #js {:x 33, :y 28, :room E39S51}, :time 16841186, :path 33284, :room E39S51}}}}, :creeps {Harvester1 {working true}}}}], :load-memory #object[Function], :write-memory #object[Function]}, :tick-trigger {:tick-trigger #object[cljs.core.Atom {:val nil}]}}
+
+(defmethod ig/init-key ::main-loop [_ opts]
+  (try
+    (partial game-loop (get opts :memory) (get opts :game))
+    (catch js/Error e
+      (println e))))
 
 #_(set! js/module.exports.loop my-loop)

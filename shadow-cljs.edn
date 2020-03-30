@@ -1,9 +1,21 @@
-{:deps true
- :builds {:main {:output-dir "target/"
-                 :output-to "target/main.js"
-                 :exports {:loop oxsevenbee.screepsbot/bot-loop}
-                 :target :node-library
-                 :js-options {:js-provider :require}
-                 }}
- :nrepl {:port 62160
-         :middleware []} }
+{:deps   true
+ :builds {:main       {:output-dir       "target/"
+                       :output-to        "target/main.js"
+                       :exports          {:loop oxsevenbee.screepsbot/bot-loop}
+                       :target           :node-library
+                       :js-options       {:js-provider :require}
+                       :compiler-options {:optimizations :advanced}
+                       :externs          ["externs/screeps.externs.js"]
+                       :infer-externs    :auto
+                       }
+          :watch-main {:output-dir       "target/"
+                       :output-to        "target/watch-main.js"
+                       :exports          {:loop oxsevenbee.screepsbot/bot-loop}
+                       :target           :node-library
+                       :js-options       {:js-provider :require}
+                       :compiler-options {:optimizations :advanced}
+                       :externs          ["externs/screeps.externs.js"]
+                       :infer-externs    :auto
+                       }}
+ :nrepl  {:port       62160
+          :middleware []}}

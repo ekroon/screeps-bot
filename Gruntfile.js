@@ -17,7 +17,7 @@ module.exports = function(grunt) {
                 ptr: ptr
             },
             dist: {
-                src: ['target/*.js', "target/*.js.map"]
+                src: ['target/main.js']
             }
         }
     });
