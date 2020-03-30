@@ -2,8 +2,9 @@
   (:require [cljs-bean.core :refer [bean? bean object ->clj ->js]]
             [cljs-bean.transit]
             [goog.object :as go]
-            [oxsevenbee.screeps.game :refer [get-spawn]]
-            [oxsevenbee.screeps.spawn :refer [spawn-creep]]
+            [oxsevenbee.screeps.game :as os-game]
+            [oxsevenbee.screeps.spawn :as os-spawn]
+            [oxsevenbee.screeps.room :as os-room]
             [cljs.spec.alpha :as s]
             [cljs.spec.test.alpha :as stest]
             [cognitect.transit :as t]
@@ -80,9 +81,10 @@
 
   (let [context {:memory memory
                  :game   game}]
-    (-> (get-spawn (:game context) "Spawn1") (spawn-creep "Harvester1" [js/WORK js/WORK js/CARRY js/MOVE]))
+    (-> (os-game/get-spawn (:game context) "Spawn1") (os-spawn/spawn-creep "Harvester1" [js/WORK js/WORK js/CARRY js/MOVE]))
     ;(spawn-creep (:game context) "Spawn1" "Harvester" [js/WORK js/WORK js/CARRY js/MOVE])
-    (manual-shard3-e39s51-controller-upgrade context "Harvester1"))
+    (manual-shard3-e39s51-controller-upgrade context "Harvester1")
+    #_(-> (os-game/get-room (:game context) "E39S51") (os-room/room-area)))
 
   (write-memory))
 

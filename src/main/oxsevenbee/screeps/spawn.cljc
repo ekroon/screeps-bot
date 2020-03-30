@@ -1,5 +1,5 @@
 (ns oxsevenbee.screeps.spawn
-  (:require [oxsevenbee.utils :refer [lift-on lift-as]]
+  (:require [oxsevenbee.utils :refer [lifted lift-on lift-as]]
             [goog.object :as go]))
 
 (defn -spawn-creep [^js/StructSpawn spawn creep-name body]
