@@ -27,6 +27,7 @@
   [name]
   `(do
      (defprotocol ~name
+       :extend-via-metadata true
        ~@(for [[s v] (api/ns-interns (symbol (str *ns*)))
                :let [fname (str s)]
                :when (and (= (first fname) \-) (not (:protocols v)))
