@@ -27,17 +27,18 @@
 
 ; keep controller active for now
 (defn manual-shard3-e39s51-controller-upgrade
-  ([{:keys [memory] :as context} creep-name]
-   (manual-shard3-e39s51-controller-upgrade context creep-name true))
-  ([{:keys [memory] :as context} creep-name first-harvest]
+  ([{:keys [memory] :as context} creep-name pos]
+   (manual-shard3-e39s51-controller-upgrade context creep-name pos true))
+  ([{:keys [memory] :as context} creep-name pos first-harvest]
    (when-let [creep (get-creep creep-name)]
      (if-not (get-creep-memory context creep-name "working" false)
        (do
-         (let [pos (.-pos creep)]
-           (if (not= [(.-x pos) (.-y pos)] [32 28])
+         (let [creep-pos (.-pos creep)]
+           (if (not= [(.-x creep-pos) (.-y creep-pos)] pos)
              (do
                (if (= 0 (.-fatigue creep))
-                 (.moveTo creep 32 28)
+                 (let [[x y] pos]
+                   (.moveTo creep x y))
                  (.say creep (str "tired: " (.-fatigue creep)))))
              (do
                (.say creep (str "> " (creep-used-capacity creep)))
@@ -45,14 +46,14 @@
                  (.harvest creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fa"))
                  (do
                    (set-creep-memory context creep-name "working" true)
-                   (when first-harvest (recur context creep-name false))))))))
+                   (when first-harvest (recur context creep-name pos false))))))))
        (do
          (.say creep (str "< " (creep-used-capacity creep)))
          (if (> (.getUsedCapacity (.-store creep)) 0)
            (.upgradeController creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fb"))
            (do
              (set-creep-memory context creep-name "working" false)
-             (when first-harvest (recur context creep-name false)))))))))
+             (when first-harvest (recur context creep-name pos false)))))))))
 
 (defn should-execute [{:keys [shard room-name]}]
   (if (and (= (:name shard) "shard3")
@@ -60,11 +61,17 @@
     :solo
     false))
 
+(defn upgrade [context creep-name pos]
+  (-> (os-game/spawn (:game context) "Spawn1") (os-spawn/spawn-creep creep-name [js/WORK js/WORK js/CARRY js/MOVE]))
+  (manual-shard3-e39s51-controller-upgrade context creep-name pos))
+
 (defn execute [{:keys [memory game]} {:keys [room-name]}]
   (let [context {:memory memory
                  :game   game}]
-    (-> (os-game/spawn (:game context) "Spawn1") (os-spawn/spawn-creep "Harvester1" [js/WORK js/WORK js/CARRY js/MOVE]))
-    (manual-shard3-e39s51-controller-upgrade context "Harvester1")))
+    (upgrade context "shard3-e39s51-1" [32 28])
+    (upgrade context "shard3-e39s51-2" [33 28])
+    (upgrade context "shard3-e39s51-3" [34 28])
+    ))
 
 (defmethod ig/init-key ::executor [_ opts]
   (reify RoomExecutor
