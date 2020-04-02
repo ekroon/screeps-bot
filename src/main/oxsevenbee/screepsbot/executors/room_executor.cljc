@@ -30,7 +30,5 @@
 
 (derive ::room-executor ::executors/executor)
 
-(defmethod ig/init-key ::room-executor [_ {:keys [memory game executors]}]
-  (partial execute {:memory    (:memory memory)
-                    :game      game
-                    :executors executors}))
+(defmethod ig/init-key ::room-executor [_ opts]
+  (partial execute opts))

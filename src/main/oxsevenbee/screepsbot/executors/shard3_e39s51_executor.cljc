@@ -76,5 +76,4 @@
 (defmethod ig/init-key ::executor [_ opts]
   (reify RoomExecutor
     (should-execute [this opts] (should-execute opts))
-    (execute [this args] ((partial execute {:memory (get-in opts [:memory :memory])
-                                            :game   (get opts :game)}) args))))
+    (execute [this args] ((partial execute opts) args))))

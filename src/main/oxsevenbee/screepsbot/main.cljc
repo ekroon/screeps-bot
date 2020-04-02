@@ -2,18 +2,19 @@
   (:require [cljs-bean.core :refer [bean? bean object ->clj ->js]]
             [cljs-bean.transit]
             [goog.object :as go]
-            [integrant.core :as ig]))
+            [integrant.core :as ig]
+            [oxsevenbee.screeps.memory :as m]))
 
-(defn game-loop [{:keys [load-memory write-memory]} executors]
-  (load-memory)
+(defn game-loop [{:keys [memory executors]}]
+  (m/pre-tick memory)
   (loop [executors executors]
     (when (seq executors)
       ((first executors))
       (recur (rest executors))))
-  (write-memory))
+  (m/post-tick memory))
 
 (defmethod ig/init-key ::main-loop [_ opts]
   (try
-    (partial game-loop (get opts :memory) (get opts :executors))
+    (partial game-loop opts)
     (catch js/Error e
       (println e))))

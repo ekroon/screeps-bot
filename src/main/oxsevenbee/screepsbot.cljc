@@ -13,10 +13,10 @@
 
 (set! *warn-on-infer* true)
 
-(def tick-handler (atom nil))
+(def tick-handler (volatile! nil))
 
 (defmethod ig/init-key ::tick-handler [_ {:keys [handler]}]
-  (reset! tick-handler handler))
+  (vreset! tick-handler handler))
 
 (def hosted-system
   {::os-mem/hosted-memory            {}
