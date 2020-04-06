@@ -18,8 +18,8 @@
 (defn set-creep-memory [{:keys [memory]} creep-name k v]
   (swap! memory (fn [m] (assoc-in m [:creeps creep-name k] v))))
 
-(defn ^js/Creep get-creep [creep-name]
-  (get-in (->clj js/Game) [:creeps (keyword creep-name)]))
+(defn ^js/Creep get-creep [{:keys [game]} creep-name]
+  (os-game/creep game creep-name))
 
 (defn creep-used-capacity [^js/Creep creep]
   (let [store (.-store creep)]
@@ -30,7 +30,7 @@
   ([{:keys [memory] :as context} creep-name pos]
    (manual-shard3-e39s51-controller-upgrade context creep-name pos true))
   ([{:keys [memory] :as context} creep-name pos first-harvest]
-   (when-let [creep (get-creep creep-name)]
+   (when-let [creep (get-creep context creep-name)]
      (if-not (get-creep-memory context creep-name "working" false)
        (do
          (let [creep-pos (.-pos creep)]
@@ -40,20 +40,20 @@
                  (let [[x y] pos]
                    (.moveTo creep x y))
                  (.say creep (str "tired: " (.-fatigue creep)))))
-             (do
-               (.say creep (str "> " (creep-used-capacity creep)))
-               (if (> (.getFreeCapacity (.-store creep)) 0)
-                 (.harvest creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fa"))
-                 (do
-                   (set-creep-memory context creep-name "working" true)
-                   (when first-harvest (recur context creep-name pos false))))))))
-       (do
-         (.say creep (str "< " (creep-used-capacity creep)))
-         (if (> (.getUsedCapacity (.-store creep)) 0)
-           (.upgradeController creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fb"))
-           (do
-             (set-creep-memory context creep-name "working" false)
-             (when first-harvest (recur context creep-name pos false)))))))))
+             (if (> (.getFreeCapacity (.-store creep)) 0)
+               (do
+                 (.say creep (str "⛏"))
+                 (.harvest creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fa")))
+               (do
+                 (set-creep-memory context creep-name "working" true)
+                 (when first-harvest (recur context creep-name pos false)))))))
+       (if (> (.getUsedCapacity (.-store creep)) 0)
+         (do
+           (.say creep (str "⏫"))
+           (.upgradeController creep (.getObjectById js/Game "5bbcaf4b9099fc012e63a6fb")))
+         (do
+           (set-creep-memory context creep-name "working" false)
+           (when first-harvest (recur context creep-name pos false))))))))
 
 (defn should-execute [{:keys [shard room-name]}]
   (if (and (= (:name shard) "shard3")

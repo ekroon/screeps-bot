@@ -5,6 +5,7 @@
             [oxsevenbee.screepsbot.main :as osm]
             [oxsevenbee.screeps.memory :as os-mem]
             [oxsevenbee.screeps.game :as os-game]
+            [oxsevenbee.screepsbot.memoize :as memoize]
             [oxsevenbee.screepsbot.executors :as executors]
             [oxsevenbee.screepsbot.executors.room-executor :as room-executor]
             [oxsevenbee.screepsbot.executors.room-visualizer :as room-visualizer]
@@ -21,13 +22,15 @@
 (def hosted-system
   {::os-mem/hosted-memory            {}
    ::os-game/game                    {}
+   ::memoize/memoizer                {:game      (ig/ref ::os-game/game)}
    ::shard3-e39s51-executor/executor {:memory    (ig/ref ::os-mem/hosted-memory)
                                       :game      (ig/ref ::os-game/game)}
-   ::room-visualizer/executor        {}
+   ::room-visualizer/executor        {:game      (ig/ref ::os-game/game)
+                                      :memoizer  (ig/ref ::memoize/memoizer)}
    ::room-executor/room-executor     {:game      (ig/ref ::os-game/game)
                                       :memory    (ig/ref ::os-mem/hosted-memory)
-                                      :executors [(ig/ref ::room-visualizer/executor)
-                                                  (ig/ref ::shard3-e39s51-executor/executor)]}
+                                      :executors [(ig/ref ::shard3-e39s51-executor/executor)
+                                                  (ig/ref ::room-visualizer/executor)]}
    ::tick-handler                    {:handler (ig/ref ::osm/main-loop)}
    ::osm/main-loop                   {:memory    (ig/ref ::os-mem/hosted-memory)
                                       :executors (ig/refset ::executors/executor)}})

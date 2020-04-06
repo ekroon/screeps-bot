@@ -1,4 +1,5 @@
 (ns oxsevenbee.screeps.game
+  (:refer-clojure :exclude [time])
   (:require [integrant.core :as ig]
             [goog.object :as go]
             [cljs-bean.core :refer [->clj ->js]]
@@ -18,7 +19,8 @@
   (spawn [game spawn-name])
   (creeps [game])
   (creep [game creep-name])
-  (rooms [game]))
+  (rooms [game])
+  (time [game]))
 
 (defn- ^js/Game -game ^js/Game [_]
   js/Game)
@@ -55,6 +57,9 @@
   (let [res (make-RoomProtocol (go/get (rooms this) room-name))]
     res))
 
+(defn- -time [this]
+  (.-time ^js/Game (game this)))
+
 (defmethod ig/init-key ::game [_ _]
   (try
     (with-meta {}
@@ -65,6 +70,7 @@
                 `spawn        -get-spawn
                 `creeps       -creeps
                 `creep        -creep
-                `rooms        -rooms})
+                `rooms        -rooms
+                `time         -time})
     (catch js/Error e
       (println e))))
