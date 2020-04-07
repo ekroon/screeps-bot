@@ -12,27 +12,40 @@
   CacheKey
   (-cache-key [_ args] args))
 
-(defn cache-key [obj args]
+#_(defn cache-key [obj args]
   (-cache-key obj args))
 
-(defn with-cache-fn [f cache-key-f]
+#_(defn with-cache-fn [f cache-key-f]
   (vary-meta f assoc `cache-key #(cache-key-f %2)))
+
+(defn cache-index [obj]
+  (get (meta obj) ::cache-index))
+
+(defn cache-key [obj args]
+  ((or (get (meta obj) ::cache-fn) identity) args))
+
+(defn with-cache-fn [f cache-key-f]
+  (vary-meta f assoc ::cache-fn cache-key-f))
 
 (defprotocol GameTickMemoizer
   (-with-tick-memory [this ticks f-var args]))
 
 (defrecord Memoizer [state game]
   GameTickMemoizer
-  (-with-tick-memory [_ ticks f-var args]
-    (let [ckey         (cache-key f-var args)
-          ticks-passed (- (game/time game) (get-in @state [f-var ckey :memoized-tick] 0))
-          result       (get-in @state [f-var ckey :result] lookup-sentinel)]
-      (if (or (= result lookup-sentinel) (> ticks-passed ticks))
-        (let [retval (apply f-var args)]
-          (swap! state assoc-in [f-var ckey :result] retval)
-          (swap! state assoc-in [f-var ckey :memoized-tick] (game/time game))
-          retval)
-        result))))
+  (-with-tick-memory [_ ticks f args]
+    (if-let [cindex (cache-index f)]
+      (let [ckey         (cache-key f args)
+            ticks-passed (- (game/time game) (get-in @state [cindex ckey :memoized-tick] 0))
+            result       (get-in @state [cindex ckey :result] lookup-sentinel)]
+        (if (or (= result lookup-sentinel) (> ticks-passed ticks))
+          (let [retval (apply f args)]
+            (swap! state assoc-in [cindex ckey :result] retval)
+            (swap! state assoc-in [cindex ckey :memoized-tick] (game/time game))
+            retval)
+          result))
+      #_else
+      (do (println "No ::cache-index meta for memoized function:" (meta f))
+          (apply f args)))))
 
 (defn with-tick-memory [memoizer ticks f-var & args]
   (-with-tick-memory memoizer ticks f-var args))

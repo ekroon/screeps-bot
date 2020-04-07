@@ -11,6 +11,9 @@
   :extend-via-metadata true
   (game [_]))
 
+(defprotocol NotifyProtocol
+  (notify [_ message] [_ message group-interval]))
+
 (defprotocol GameProtocol
   :extend-via-metadata true
   (shard [game])
@@ -60,6 +63,10 @@
 (defn- -time [this]
   (.-time ^js/Game (game this)))
 
+(defn- -notify
+  ([this message] (-notify this message 0))
+  ([this message group-interval] (.notify ^js/Game (game this) message group-interval)))
+
 (defmethod ig/init-key ::game [_ _]
   (try
     (with-meta {}
@@ -71,6 +78,7 @@
                 `creeps       -creeps
                 `creep        -creep
                 `rooms        -rooms
-                `time         -time})
+                `time         -time
+                `notify       -notify})
     (catch js/Error e
       (println e))))

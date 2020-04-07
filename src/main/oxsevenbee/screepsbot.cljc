@@ -5,6 +5,7 @@
             [oxsevenbee.screepsbot.main :as osm]
             [oxsevenbee.screeps.memory :as os-mem]
             [oxsevenbee.screeps.game :as os-game]
+            [oxsevenbee.screeps.timeout :as timeout]
             [oxsevenbee.screepsbot.memoize :as memoize]
             [oxsevenbee.screepsbot.executors :as executors]
             [oxsevenbee.screepsbot.executors.room-executor :as room-executor]
@@ -23,6 +24,7 @@
   {::os-mem/hosted-memory            {}
    ::os-game/game                    {}
    ::memoize/memoizer                {:game      (ig/ref ::os-game/game)}
+   ::timeout/timeout                 {:game      (ig/ref ::os-game/game)}
    ::shard3-e39s51-executor/executor {:memory    (ig/ref ::os-mem/hosted-memory)
                                       :game      (ig/ref ::os-game/game)}
    ::room-visualizer/executor        {:game      (ig/ref ::os-game/game)
@@ -33,7 +35,9 @@
                                                   (ig/ref ::room-visualizer/executor)]}
    ::tick-handler                    {:handler (ig/ref ::osm/main-loop)}
    ::osm/main-loop                   {:memory    (ig/ref ::os-mem/hosted-memory)
-                                      :executors (ig/refset ::executors/executor)}})
+                                      :executors (ig/refset ::executors/executor)
+                                      :game      (ig/ref ::os-game/game)
+                                      :timeout   (ig/ref ::timeout/timeout)}})
 
 (def system (delay (ig/init hosted-system)))
 

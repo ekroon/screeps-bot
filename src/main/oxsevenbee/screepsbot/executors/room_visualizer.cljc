@@ -14,14 +14,16 @@
             [cognitect.transit :as t]
             [integrant.core :as ig]))
 
-(defn extension-ratio [{:keys [game]} room-name]
-  (let [room           ^js/Room (lifted (game/room game room-name))
-        rcl            (or (go/getValueByKeys room "controller" "level") 0)
-        max-extensions (go/getValueByKeys js/CONTROLLER_STRUCTURES "extension" rcl)
-        extensions     (count (filter (comp #(= js/STRUCTURE_EXTENSION %)
-                                            #(go/get % "structureType"))
-                                      (.find room js/FIND_MY_STRUCTURES)))]
-    [extensions max-extensions]))
+(def extension-ratio
+  ^{::s-memoize/cache-fn rest ::s-memoize/cache-index #'extension-ratio}
+  (fn [{:keys [game]} room-name]
+    (let [room           ^js/Room (lifted (game/room game room-name))
+          rcl            (or (go/getValueByKeys room "controller" "level") 0)
+          max-extensions (go/getValueByKeys js/CONTROLLER_STRUCTURES "extension" rcl)
+          extensions     (count (filter (comp #(= js/STRUCTURE_EXTENSION %)
+                                              #(go/get % "structureType"))
+                                        (.find room js/FIND_MY_STRUCTURES)))]
+      [extensions max-extensions])))
 
 (defn should-execute [{:keys [shard room-name]}]
   true)
@@ -30,7 +32,7 @@
   (let [visual   ^js/RoomVisual (js/RoomVisual. room-name)
         ex-ratio (s-memoize/with-tick-memory
                    memoizer 100
-                   (s-memoize/with-cache-fn #'extension-ratio rest)
+                   extension-ratio
                    context room-name)]
     (.text visual (pr-str ex-ratio) 5 5)))
 

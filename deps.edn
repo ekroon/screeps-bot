@@ -10,4 +10,5 @@
 
          ; ----- SHADOWCLJS
          thheller/shadow-cljs       {:mvn/version "RELEASE"}
-         }}
+         }
+ :aliases {:test {:extra-paths ["src/test"]}}}
