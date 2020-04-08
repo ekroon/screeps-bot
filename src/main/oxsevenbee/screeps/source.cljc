@@ -1,9 +1,13 @@
 (ns oxsevenbee.screeps.source
-  (:require [oxsevenbee.utils :refer [lifted lift-on lift-as]]
-            [goog.object :as go]
+  (:require [goog.object :as go]
             [cljs-bean.core :refer [->js ->clj]]))
 
-(defn -id [source]
-  (.-id ^js source))
+(defprotocol SourceProtocol
+  (-id [source]))
 
-(lift-as SourceProtocol)
+(extend-type js/Source
+  SourceProtocol
+  (-id [source] (.-id source)))
+
+(defn id [source]
+  (-id source))

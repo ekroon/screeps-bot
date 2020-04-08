@@ -8,7 +8,6 @@
             [oxsevenbee.screeps.game :as game]
             [oxsevenbee.screeps.spawn :as os-spawn]
             [oxsevenbee.screeps.room :as os-room]
-            [oxsevenbee.utils :refer [lifted]]
             [cljs.spec.alpha :as s]
             [cljs.spec.test.alpha :as stest]
             [cognitect.transit :as t]
@@ -17,7 +16,7 @@
 (def extension-ratio
   ^{::s-memoize/cache-fn rest ::s-memoize/cache-index #'extension-ratio}
   (fn [{:keys [game]} room-name]
-    (let [room           ^js/Room (lifted (game/room game room-name))
+    (let [room           ^js/Room (game/room game room-name)
           rcl            (or (go/getValueByKeys room "controller" "level") 0)
           max-extensions (go/getValueByKeys js/CONTROLLER_STRUCTURES "extension" rcl)
           extensions     (count (filter (comp #(= js/STRUCTURE_EXTENSION %)

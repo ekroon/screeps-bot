@@ -1,20 +1,27 @@
 (ns oxsevenbee.screeps.room
   (:refer-clojure :exclude [-name name])
-  (:require [oxsevenbee.utils :refer [lifted lift-on lift-as]]
-            [oxsevenbee.screeps.source :refer [make-SourceProtocol]]
+  (:require [oxsevenbee.screeps.source]
+            [oxsevenbee.screeps.constants :as c]
             [goog.object :as go]
             [cljs-bean.core :refer [->js ->clj]]))
 
-(defn -room-area [room]
-  (->clj (.lookAtArea ^js room 0 0 49 49 true)))
+(defprotocol RoomProtocol
+  (-room-area [room])
+  (-name [room])
+  (-find-in-room [room type]))
 
-(defn -name [^js/Room room]
-  (.-name room))
+(extend-type js/Room
+  RoomProtocol
+  (-room-area [^js/Room room]
+    (->clj (.lookAtArea room 0 0 49 49 true)))
+  (-name [^js/Room room]
+    (.-name room))
+  (-find-in-room [^js/Room room type]
+    (.find room type)))
 
-(defn -find-in-room [^js/Room room type]
-  (.find room type))
+(defn room-area [room] (-room-area room))
+(defn name [room] (-name room))
+(defn find-in-room [room] (-find-in-room room type))
 
-(defn -sources [^js/Room room]
-  (map make-SourceProtocol (-find-in-room room js/FIND_SOURCES)))
-
-(lift-as RoomProtocol)
+(defn sources [^js/Room room]
+  (-find-in-room room c/find-sources))

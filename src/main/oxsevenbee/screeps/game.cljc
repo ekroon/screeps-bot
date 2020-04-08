@@ -4,8 +4,8 @@
             [goog.object :as go]
             [cljs-bean.core :refer [->clj ->js]]
             [oxsevenbee.screeps.protocols :as osp]
-            [oxsevenbee.screeps.spawn :refer [make-SpawnProtocol]]
-            [oxsevenbee.screeps.room :refer [make-RoomProtocol]]))
+            [oxsevenbee.screeps.spawn]
+            [oxsevenbee.screeps.room]))
 
 (defprotocol GameHolder
   :extend-via-metadata true
@@ -41,7 +41,7 @@
   (go/get (game this) "spawns"))
 
 (defn- -get-spawn [this spawn-name]
-  (let [res (make-SpawnProtocol (go/get (spawns this) spawn-name))]
+  (let [res (go/get (spawns this) spawn-name)]
     res))
 
 (defn- -creeps [this]
@@ -57,8 +57,7 @@
   (js-keys (rooms this)))
 
 (defn- room [this room-name]
-  (let [res (make-RoomProtocol (go/get (rooms this) room-name))]
-    res))
+  (go/get (rooms this) room-name))
 
 (defn- -time [this]
   (.-time ^js/Game (game this)))

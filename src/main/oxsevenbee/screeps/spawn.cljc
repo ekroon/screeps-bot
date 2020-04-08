@@ -1,12 +1,13 @@
 (ns oxsevenbee.screeps.spawn
-  (:require [oxsevenbee.utils :refer [lifted lift-on lift-as]]
-            [goog.object :as go]))
+  (:require [goog.object :as go]))
 
-(defn -spawn-creep [spawn creep-name body]
-  (.spawnCreep ^js spawn (clj->js body) (name creep-name)))
+(defprotocol SpawnProtocol
+  (-spawn-creep [spawn creep-name body]))
 
-(lift-as SpawnProtocol)
+(extend-type js/StructureSpawn
+  SpawnProtocol
+  (-spawn-creep [^js/StructureSpawn spawn creep-name body]
+    (.spawnCreep spawn (clj->js body) creep-name )))
 
-;
-;(defn ->SpawnProtocol [o]
-;  (lift-on SpawnProtocol o))
+(defn spawn-creep [spawn creep-name body]
+  (-spawn-creep spawn creep-name body))
