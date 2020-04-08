@@ -1,4 +1,0 @@
-global:RawMemory
-global:Memory
-global:Game
-global:RawMemory

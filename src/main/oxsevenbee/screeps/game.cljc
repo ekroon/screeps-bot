@@ -25,7 +25,7 @@
   (rooms [game])
   (time [game]))
 
-(defn- ^js/Game -game ^js/Game [_]
+(defn- -game [_]
   js/Game)
 
 (defn- -shard [this]
@@ -40,14 +40,14 @@
 (defn- -spawns [this]
   (go/get (game this) "spawns"))
 
-(defn- ^js/StructureSpawn -get-spawn [this spawn-name]
+(defn- -get-spawn [this spawn-name]
   (let [res (make-SpawnProtocol (go/get (spawns this) spawn-name))]
     res))
 
 (defn- -creeps [this]
   (go/get (game this) "creeps"))
 
-(defn- ^js/Creep -creep [this creep-name]
+(defn- -creep [this creep-name]
   (go/get (creeps this) creep-name))
 
 (defn- -rooms [this]

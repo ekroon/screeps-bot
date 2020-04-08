@@ -2,8 +2,8 @@
   (:require [oxsevenbee.utils :refer [lifted lift-on lift-as]]
             [goog.object :as go]))
 
-(defn -spawn-creep [^js/StructSpawn spawn creep-name body]
-  (.spawnCreep spawn (clj->js body) (name creep-name)))
+(defn -spawn-creep [spawn creep-name body]
+  (.spawnCreep ^js spawn (clj->js body) (name creep-name)))
 
 (lift-as SpawnProtocol)
 

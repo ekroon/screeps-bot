@@ -5,8 +5,8 @@
             [goog.object :as go]
             [cljs-bean.core :refer [->js ->clj]]))
 
-(defn -room-area [^js/Room room]
-  (->clj (.lookAtArea room 0 0 49 49 true)))
+(defn -room-area [room]
+  (->clj (.lookAtArea ^js room 0 0 49 49 true)))
 
 (defn -name [^js/Room room]
   (.-name room))
