@@ -11,6 +11,7 @@
           :watch-main {:output-dir       "target/"
                        :output-to        "target/watch-main.js"
                        :exports          {:loop oxsevenbee.screepsbot/bot-loop}
+                       :closure-defines  {oxsevenbee.screepsbot.compile/repl-mode-enabled? true}
                        :target           :node-library
                        :js-options       {:js-provider :require}
                        :compiler-options {:optimizations :advanced}

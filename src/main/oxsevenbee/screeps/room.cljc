@@ -2,8 +2,17 @@
   (:refer-clojure :exclude [-name name])
   (:require [oxsevenbee.screeps.source]
             [oxsevenbee.screeps.constants :as c]
+            [oxsevenbee.screepsbot.compile :refer [is-repl-mode-enabled?]]
             [goog.object :as go]
             [cljs-bean.core :refer [->js ->clj]]))
+
+(when (is-repl-mode-enabled?)
+  (when (or (not js/global.Room)
+            (and js/global.Room (.-dummy js/global.Room)))
+    (println "WARN: overriding js/Room")
+    (deftype Room [-dummy])
+    (set! Room.dummy true)
+    (set! js/global.Room Room)))
 
 (defprotocol RoomProtocol
   (-room-area [room])
@@ -25,3 +34,4 @@
 
 (defn sources [^js/Room room]
   (-find-in-room room c/find-sources))
+
